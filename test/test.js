@@ -1,7 +1,7 @@
 /*
  * @Author: Jiaming Cui
  * @Date: 2022-03-14 22:26:47
- * @LastEditTime: 2022-03-15 17:29:51
+ * @LastEditTime: 2022-03-22 20:28:41
  * @FilePath: \firstNFT\test\test.js
  * @Description: 
  * 
@@ -11,6 +11,8 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BigNumber } = require("ethers");
 const { showThrottleMessage } = require("@ethersproject/providers");
+const { MerkleTree } = require("merkletreejs");
+const keccak256 = require("keccak256");
 
 let owner, addr1;
 let nft, hardhatToken, market;
@@ -65,6 +67,33 @@ describe("Token contract", function () {
         const res = await market.connect(addr1).buyNFT(0);
         expect(await market.nftBuyers(0)).to.equals(addr1.address);
 
+    });
+
+    it("merkle tree test", async () => {
+        let wl = [
+            '0x169841AA3024cfa570024Eb7Dd6Bf5f774092088',
+            '0xc12ae5Ba30Da6eB11978939379D383beb5Df9b33',
+            '0x0a290c8cE7C35c40F4F94070a9Ed592fC85c62B9',
+            '0x43Be076d3Cd709a38D2f83Cd032297a194196517',
+            '0xC7FaB03eecA24CcaB940932559C5565a4cE9cFFb',
+            '0xE4336D25e9Ca0703b574a6fd1b342A4d0327bcfa',
+            '0xeDcB8a28161f966C5863b8291E80dDFD1eB78491'
+        ];
+
+        let leafNodesArray = wl.map(address => keccak256(address));
+        let tree = new MerkleTree(leafNodesArray, keccak256, { sortPairs: true });
+        console.log("tree node:", tree.getHexRoot());
+        console.log(tree.toString());
+
+        // verify address is in the wl or not
+        const claimAddrHash = leafNodesArray[0];
+        const hexProof = tree.getHexProof(claimAddrHash);
+        console.log("claim address hash is:", claimAddrHash.toString('hex'));
+        console.log("hex proof is:", hexProof);
+
+        const badAddrHash = keccak256('0x169841AA3024cfa570024Eb7Dd6Bf5f774092087');
+        const badHexProof = tree.getHexProof(badAddrHash);
+        console.log("bad merkle proof is:", badHexProof);
     });
 
 });
